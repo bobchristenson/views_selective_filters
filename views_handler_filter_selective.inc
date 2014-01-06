@@ -1,9 +1,13 @@
 <?php
+/**
+ * @file
+ * Views Filter Selective Handler Overrides.
+ */
 
 class views_handler_filter_selective extends views_handler_filter_in_operator {
-  static $results;
+  private static $results;
   
-  function views_handler_filter_selective(){
+  function __construct() {
     //This filter showld always be exposed!
     $this->options['exposed'] = TRUE;
     //Do not allow to reduce options, makes no sense
@@ -28,14 +32,14 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
   
   function options_form(&$form, &$form_state) {
       parent::options_form($form, $form_state);
-      //Filter should always be exposed, show warning
+      // Filter should always be exposed, show warning.
       $form['expose_button'] = array('warning' => array(
                                           '#type' => 'markup',
                                           '#markup' => '<div class="messages warning">This filter is always exposed to users.</div>'
                                       ));
-      //Change "All Values" to "Available at runtime"
+      // Change "All Values" to "Available at runtime".
       $form['value']['#options']['all'] = t('Actual values will be available at run-time');
-      //Cannot group without values
+      // Cannot group without values.
       unset($form['group_button']);
   }
   
@@ -80,12 +84,12 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
         unset($_GET['items_per_page']);
       }
       if (isset($_GET[$field])) {
-          $exposed_filter = $_GET[$field];
-          unset($_GET[$field]);
+        $exposed_filter = $_GET[$field];
+        unset($_GET[$field]);
       }
       if (isset($_GET['page'])) {
-          $exposed_page = $_GET['page'];
-          unset($_GET['page']);
+        $exposed_page = $_GET['page'];
+        unset($_GET['page']);
       }
       
       // Remove "our" field from exposed input.
@@ -103,19 +107,19 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       
       // Check to see if the user remembered to add correspondiend field to fields.
       if(empty($display->display_options['fields']) && empty($display_default->display_options['fields'])){
-          drupal_set_message('Selective query filter {$field} must have corresponding field added to view.');
-          return array();
+        drupal_set_message('Selective query filter {$field} must have corresponding field added to view.');
+        return array();
       }
       
       // If main field is excluded form presentation, bring it back.
       // Set group type for handler to populate database relationships in query.
       if(isset($display->display_options['fields'][$field_name])){
-          $display->display_options['fields'][$field_name]['exclude'] = 0;
-          $display->display_options['fields'][$field_name]['group_type'] = 'group';
+        $display->display_options['fields'][$field_name]['exclude'] = 0;
+        $display->display_options['fields'][$field_name]['group_type'] = 'group';
       }
       if(isset($display_default->display_options['fields'][$field_name])){
-          $display_default->display_options['fields'][$field_name]['exclude'] = 0;
-          $display_default->display_options['fields'][$field_name]['group_type'] = 'group';
+        $display_default->display_options['fields'][$field_name]['exclude'] = 0;
+        $display_default->display_options['fields'][$field_name]['group_type'] = 'group';
       }
       
       // Remove all sorting, this will be included in the aggregate fields, we do not want that to happen.
@@ -137,24 +141,24 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
         $_GET['items_per_page'] = $items_per_page;
       }
       if (isset($exposed_filter)) {
-          $_GET[$field] = $exposed_filter;
+        $_GET[$field] = $exposed_filter;
       }
       if (isset($exposed_page)) {
-          $_GET['page'] = $exposed_page;
+        $_GET['page'] = $exposed_page;
       }
       
       // Create array of objects for selector.
       $oids = array();
       $field_alias = $view_copy->query->field_aliases[$table][$real_field];
       foreach ($view_copy->result as $index => $row) {
-          $key = $row->{$field_alias};
-          $value = $view_copy->render_field($field_name, $index);
-          $oids[$key] = empty($value) ? (empty($key) ? t('empty') : $key): $value; 
+        $key = $row->{$field_alias};
+        $value = $view_copy->render_field($field_name, $index);
+        $oids[$key] = empty($value) ? (empty($key) ? t('empty') : $key): $value; 
       }
       
       // Check if limited exceeded, if so, this does not look like a good candidate.
       if(count($oids) == $max_items){
-        drupal_set_message(t('Selective filter {$field} has limited the amount of total results. Please, review you query configuration.'));
+        drupal_set_message(t('Selective filter [' . $field . '] has limited the amount of total results. Please, review you query configuration.'));
       } 
       
       self::$results[$signature] = $oids;
@@ -163,4 +167,3 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
     return self::$results[$signature];
   }
 }
-

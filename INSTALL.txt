@@ -1,7 +1,7 @@
 1. There is no migration path from previous version of module "views hacks". 
 You must recreate filters.
 
-2. As for today, you must patch Views Core with a few lines in order to make this module work:
+2. As for today, you must patch Views Core in order to make this module work:
 
 Details in:
 
@@ -11,5 +11,5 @@ Patch in:
 
 https://drupal.org/files/issues/views-aggregation_problem-2159347-0_0.patch
 
-Make sure this is the latest patch available before applying by checking the issue's page. 
+Check latest patch available before applying by checking the issue's page. 
 It is just a few lines, can be asily applied manually.
