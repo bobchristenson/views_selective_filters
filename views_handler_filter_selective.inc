@@ -8,32 +8,32 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
   protected static $results;
 
   /**
-   * views_handler_filter_selective Constructor.
+   * Constructor for views_handler_filter_selective.
    */
-  function __construct() {
-    //This filter showld always be exposed!
+  public function __construct() {
+    // This filter showld always be exposed!
     $this->options['exposed'] = TRUE;
-    //Do not allow to reduce options, makes no sense
+    // Do not allow to reduce options, makes no sense.
     $this->options['expose']['reduce'] = FALSE;
   }
 
   /**
    * Override get_value_options: retrieve available values.
    */
-  function get_value_options() {
+  public function get_value_options() {
     $this->value_options = array();
     if (empty($this->view->selective_oids) && !empty($this->view->inited)) {
       $oids = $this->get_oids($this->definition['field_base'], $this->real_field, $this->field, $this->table, $this->table_alias);
       $this->value_options = $oids;
-      //Use array_diff_key to remove options with "empty" values
-      $this->value_options = array_diff_key($this->value_options , array("" => NULL)); 
+      // Use array_diff_key to remove options with "empty" values.
+      $this->value_options = array_diff_key($this->value_options, array("" => NULL));
     }
   }
 
   /**
    * Override value_form.
    */
-  function value_form(&$form, &$form_state) {
+  public function value_form(&$form, &$form_state) {
     parent::value_form($form, $form_state);
     // Avoid the 'illegal values' Form API error.
     $form['value']['#validated'] = TRUE;
@@ -42,23 +42,24 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
   /**
    * Override options_form.
    */
-  function options_form(&$form, &$form_state) {
-      parent::options_form($form, $form_state);
-      // Filter should always be exposed, show warning.
-      $form['expose_button'] = array('warning' => array(
-                                          '#type' => 'markup',
-                                          '#markup' => '<div class="messages warning">This filter is always exposed to users.</div>'
-                                      ));
-      // Change "All Values" to "Available at runtime".
-      $form['value']['#options']['all'] = t('Actual values will be available at run-time');
-      // Cannot group without values.
-      unset($form['group_button']);
+  public function options_form(&$form, &$form_state) {
+    parent::options_form($form, $form_state);
+    // Filter should always be exposed, show warning.
+    $form['expose_button'] = array(
+                                    'warning' => array(
+                                        '#type' => 'markup',
+                                        '#markup' => '<div class="messages warning">This filter is always exposed to users.</div>',
+                                    ));
+    // Change "All Values" to "Available at runtime".
+    $form['value']['#options']['all'] = t('Actual values will be available at run-time');
+    // Cannot group without values.
+    unset($form['group_button']);
   }
 
   /**
    * Override expose_form.
    */
-  function expose_form(&$form, &$form_state) {
+  public function expose_form(&$form, &$form_state) {
       parent::expose_form($form, $form_state);
       unset($form['expose']['reduce']);
   }
@@ -66,7 +67,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
   /**
    * Override query.
    */
-  function query() {
+  public function query() {
     // Decode the values to restore special chars.
     $this->value = array_map('urldecode', $this->value);
     parent::query();
@@ -75,7 +76,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
   /**
    * Get list of options for current view, only at runtime.
    */
-  function get_oids($field_name, $real_field, $field, $table, $table_alias) {
+  protected function get_oids($field_name, $real_field, $field, $table, $table_alias) {
     $exposed_input = isset($this->view->exposed_input) ? $this->view->exposed_input : array();
     $exposed_input = array_merge(array(), $exposed_input);
     unset($exposed_input[$field_name . '_selective']);
@@ -95,11 +96,11 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       $view_copy->set_exposed_input($exposed_input);
       $view_copy->set_arguments($this->view->args);
 
-      // It is very easy to mess up with the field used for distinct and easily have thousands of elements.
-      // For protection, limit result set to 100 items, anyways anything above 100 is not user friendly at all.
+      // Easy to mess up with the field used for distinct and easily have thousands of elements.
+      // Limit result set to 100 items: anything above 100 is not user friendly at all.
       $view_copy->set_items_per_page($max_items);
 
-      // Remove paging, items per page and page number from context, just in case....
+      // Remove paging, items per page and page number from context.
       if (isset($_GET['items_per_page'])) {
         $items_per_page = $_GET['items_per_page'];
         unset($_GET['items_per_page']);
@@ -118,16 +119,16 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
 
       $display_to_use = $this->view->current_display;
 
-      // Manipulate specific display + default, we don't know if fields are overriden.
+      // Manipulate display + default: don't know if fields are overriden.
       $display = $view_copy->display[$display_to_use];
       $display_default = $view_copy->display['default'];
 
-      // Remove all fields, except for the one we want the "distinct" to happen in.
-      $display->display_options['fields'] = array_intersect_key($display->display_options['fields'],array($field_name => NULL));
-      $display_default->display_options['fields'] = array_intersect_key($display->display_options['fields'],array($field_name => NULL));
+      // Remove all fields, except for the one for "distinct" to happen in.
+      $display->display_options['fields'] = array_intersect_key($display->display_options['fields'], array($field_name => NULL));
+      $display_default->display_options['fields'] = array_intersect_key($display->display_options['fields'], array($field_name => NULL));
 
       // Check to see if the user remembered to add correspondiend field to fields.
-      if(empty($display->display_options['fields']) && empty($display_default->display_options['fields'])){
+      if (empty($display->display_options['fields']) && empty($display_default->display_options['fields'])) {
         drupal_set_message('Selective query filter {$field} must have corresponding field added to view.');
         return array();
       }
@@ -143,7 +144,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
         $display_default->display_options['fields'][$field_name]['group_type'] = 'group';
       }
 
-      // Remove all sorting, this will be included in the aggregate fields, we do not want that to happen.
+      // Remove all sorting.
       unset($display->display_options['sorts']);
       unset($display_default->display_options['sorts']);
 
@@ -176,12 +177,12 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
         $value = $view_copy->render_field($field_name, $index);
         $oids[$key] = empty($value) ? (empty($key) ? t('empty') : $key): $value; 
       }
- 
-      // Check if limited exceeded, if so, this does not look like a good candidate.
+
+      // If limit exceeded this field is not good for being "selective".
       if (count($oids) == $max_items) {
-          drupal_set_message(t('Selective filter [@field] has limited the amount of total results. Please, review you query configuration.', array('@field' => $field)));
+        drupal_set_message(t('Selective filter [@field] has limited the amount of total results. Please, review you query configuration.', array('@field' => $field)));
       } 
- 
+
       self::$results[$signature] = $oids;
       $view_copy->destroy();
     }
