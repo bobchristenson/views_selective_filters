@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Views Fiters Selective Module
+ */
 
 /**
  * Implements hook_views_api().
@@ -11,19 +15,6 @@ function views_filters_selective_views_api() {
 
 /**
  * Implements hook_views_filters_selective_handler().
- *
- * This hook allows filters of different types to be restricted.
- * @return 
- *   A keyed array of supported filters:
- *   'filter_class' => 'filter_handler'
- * 
- * Handler signature:
- * @param $filter
- *    The filter handler being limited
- * @param $oids
- *    The base ids of the result set
- * @return
- *    An array of acceptable values for the filter
  */
 function views_filters_selective_views_filters_selective_handler() {
   return array(
@@ -35,43 +26,9 @@ function views_filters_selective_views_filters_selective_handler() {
  * Callback implementation for generic filter.
  */
 function views_filters_selective_handler_filter($filter, $oids) {
-  return _views_filter_selective_query($filter, $filter->real_field, $filter->table, $oids);
-}
-
-/**
- * Helper function to create selective query.
- */
-function _views_filter_selective_query($filter, $field_name, $table_name, $oids) {
-    $options = array();
-    foreach ($oids as $id) {
-        $options[] = $id;
-    }
-    return $options;
-}
-
-/**
- * Helper function to find handler for given filter class.
- */
-function _views_filters_selective_get_handler($filter_class) {
-  static $handlers = NULL;
-  if (empty($handlers)) {
-    $handlers = module_invoke_all('views_filters_selective_handler');
+  $options = array();
+  foreach ($oids as $id) {
+    $options[] = $id;
   }
-  foreach (_views_filters_selective_get_ancestors($filter_class) as $class) {
-    if (isset($handlers[$class])) {
-      return $handlers[$class];
-    }
-  }
+  return $options;
 }
-
-/**
- * Helper function to find ancestors of given class.
- */
-function _views_filters_selective_get_ancestors($class) {
-  $classes = array($class);
-  while ($class = get_parent_class($class)) {
-    $classes[] = $class;
-  }
-  return $classes;
-}
-
