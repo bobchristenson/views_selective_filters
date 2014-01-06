@@ -25,8 +25,8 @@ function views_filters_selective_views_data_alter(&$data) {
   foreach ($data as $table_name => $table_info) {
     foreach ($table_info as $field_name => $field_info) {
       if (!empty($field_info['filter']['handler']) && $field_info['filter']['handler'] != 'views_handler_filter_selective') {
-        $_field_name =  $field_info['filter']['field_name'];
-        // Ignore translated, format and delta to reduce the amount of available filters in UI.
+        $_field_name = $field_info['filter']['field_name'];
+        // Ignore translated, format and delta.
         if (_views_filters_selective_endsWith($field_name, '_i18n') || _views_filters_selective_endsWith($field_name, '_format') || $field_name == 'delta') {
           continue;
         }
