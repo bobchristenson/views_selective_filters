@@ -102,7 +102,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
   /**
    * Get list of options for current view, only at runtime.
    */
-  protected function get_oids($field_name, $real_field, $field, $table, $table_alias, $exposed_identifier, $ui_name) {
+  protected function get_oids($base_field, $real_field, $field, $table, $table_alias, $exposed_identifier, $ui_name) {
     $exposed_input = isset($this->view->exposed_input) ? $this->view->exposed_input : array();
     $exposed_input = array_merge(array(), $exposed_input);
     unset($exposed_input[$exposed_identifier]);
@@ -110,13 +110,17 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       'name' => $this->view->name,
       'args' => $this->view->args,
       'input' => $exposed_input,
-      'field_name' => $field_name,
+      'base_field' => $base_field,
+      'real_field' => $real_field,
+      'field' => $field,
+      'table' => $table,
+      'ui_name' => $ui_name
     )));
     if (empty(self::$results[$signature])) {
       $max_items = 100;
 
-      // Clone the view and get all results.
-      $view_copy = views_get_view($this->view->name);
+      // Clone the view (current, so it works while editting) and get all results.
+      $view_copy = $this->view->clone_view();
       if (!$view_copy) {
         return NULL;
       }
@@ -145,55 +149,57 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       // Remove "our" field from exposed input.
       unset($view_copy->exposed_input[$field]);
 
-      $display_to_use = $this->view->current_display;
-
       // Manipulate display + default: don't know if fields are overriden.
-      $display = $view_copy->display[$display_to_use];
+      $display = $view_copy->display[$this->view->current_display];
       $display_default = $view_copy->display['default'];
 
       // Remove all fields, except for the one for "distinct" to happen in.
       foreach ($display->display_options['fields'] as $key => $value) {
-        if (($value['ui_name'] != $ui_name) || ($value['field'] != $field_name)) {
+        if (($value['ui_name'] != $ui_name) || ($value['field'] != $base_field)) {
           unset($display->display_options['fields'][$key]);
         }
       }
       foreach ($display_default->display_options['fields'] as $key => $value) {
-        if (($value['ui_name'] != $ui_name) || ($value['field'] != $field_name)) {
+        if (($value['ui_name'] != $ui_name) || ($value['field'] != $base_field)) {
           unset($display_default->display_options['fields'][$key]);
         }
       }
 
       // Check to see if the user remembered to add correspondiend field to fields.
       if (empty($display->display_options['fields']) && empty($display_default->display_options['fields'])) {
-        drupal_set_message(t('Selective query filter "@field" must have corresponding field added to view with Administrative Name set to "@name" and type "@type"', 
+        drupal_set_message(t('Selective query filter must have corresponding field added to view with Administrative Name set to "@name" and Base Type "@type"', 
           array(
-            '@field' => $field_name, 
-            '@name' => $exposed_identifier, 
-            '@type' => $field_name)), 
+            '@name' => $ui_name, 
+            '@type' => $base_field)), 
             'error');
         return array();
       }
-
+        
       // Get ID of field that will be used for rendering.
       foreach ($display->display_options['fields'] as $key => $value) {
-        $field_id = $value['id'];
+        $display_field = &$value;
       }
       if (!isset($field_id)) {
-        foreach ($display_default->display_options['fields'] as $key => $value) {
-          $field_id = $value['id'];
+        foreach ($display_default->display_options['fields'] as $key => &$value) {
+          $display_field = &$value;
         }
       }
+      // Get field Id.
+      $display_field_id = $display_field['id'];
 
+      // Check that relationships are coherent between Field and Filter.
+      if ($display_field['relationship'] != $this->options['relationship']) {
+        drupal_set_message(t('Selective filter "@name": relationship of field and filter must match.', 
+         array(
+           '@name' => $ui_name, 
+           '@type' => $base_field)), 
+           'error');
+        return array();
+      }
       // If main field is excluded form presentation, bring it back.
       // Set group type for handler to populate database relationships in query.
-      if (isset($display->display_options['fields'][$field_id])) {
-        $display->display_options['fields'][$field_id]['exclude'] = 0;
-        $display->display_options['fields'][$field_id]['group_type'] = 'group';
-      }
-      if (isset($display_default->display_options['fields'][$field_id])) {
-        $display_default->display_options['fields'][$field_id]['exclude'] = 0;
-        $display_default->display_options['fields'][$field_id]['group_type'] = 'group';
-      }
+      $display_field['exclude'] = 0;
+      $display_field['group_type'] = 'group';
 
       // Remove all sorting.
       unset($display->display_options['sorts']);
@@ -220,12 +226,15 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
         $_GET['page'] = $exposed_page;
       }
 
+      // Get Handler after execution.
+      $display_field_handler = $view_copy->field[$display_field_id];
+
       // Create array of objects for selector.
       $oids = array();
-      $field_alias = $view_copy->query->field_aliases[$table][$real_field];
+      $field_alias = $display_field_handler->table_alias . '_' . $display_field_handler->real_field;
       foreach ($view_copy->result as $index => $row) {
         $key = $row->{$field_alias};
-        $value = $view_copy->render_field($field_id, $index);
+        $value = $view_copy->render_field($display_field_id, $index);
         $oids[$key] = empty($value) ? (empty($key) ? t('Empty (@key)', array('@key' => json_encode($key))) : $key): $value;
       }
 
@@ -234,7 +243,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
 
       // If limit exceeded this field is not good for being "selective".
       if (count($oids) == $max_items) {
-        drupal_set_message(t('Selective filter [@field] has limited the amount of total results. Please, review you query configuration.', array('@field' => $field)));
+        drupal_set_message(t('Selective filter "@field" has limited the amount of total results. Please, review you query configuration.', array('@field' => $ui_name)), 'warning');
       }
 
       self::$results[$signature] = $oids;
