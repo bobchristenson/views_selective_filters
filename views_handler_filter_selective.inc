@@ -8,13 +8,14 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
   protected static $results;
 
   /**
-   * Constructor for views_handler_filter_selective.
+   * Override set_default_options.
    */
-  public function __construct() {
-    // This filter showld always be exposed!
-    $this->options['exposed'] = TRUE;
-    // Do not allow to reduce options, makes no sense.
-    $this->options['expose']['reduce'] = FALSE;
+  public function set_default_options(){
+      parent::set_default_options();
+      // This filter showld always be exposed!
+      $this->options['exposed'] = TRUE;
+      // Do not allow to reduce options, makes no sense.
+      $this->options['expose']['reduce'] = FALSE;
   }
 
   /**
@@ -23,11 +24,20 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
   public function get_value_options() {
     $this->value_options = array();
     if (empty($this->view->selective_oids) && !empty($this->view->inited)) {
-      $oids = $this->get_oids($this->definition['field_base'], $this->real_field, $this->field, $this->table, $this->table_alias);
+      $oids = $this->get_oids($this->definition['field_base'], $this->real_field, $this->field, $this->table, $this->table_alias, $this->options['expose']['identifier'], $this->options['ui_name']);
       $this->value_options = $oids;
-      // Use array_diff_key to remove options with "empty" values.
+      // TODO: We are omiting null values in result set because they are improperly handled.
+      // When constructing the query.
       $this->value_options = array_diff_key($this->value_options, array("" => NULL));
     }
+  }
+
+  /**
+   * Override validate;
+   */
+  public function validate() {
+      $errors = parent::validate();
+      return $errors;
   }
 
   /**
@@ -45,13 +55,17 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
   public function options_form(&$form, &$form_state) {
     parent::options_form($form, $form_state);
     // Filter should always be exposed, show warning.
-    $form['expose_button'] = array(
-                                    'warning' => array(
-                                        '#type' => 'markup',
-                                        '#markup' => '<div class="messages warning">This filter is always exposed to users.</div>',
-                                    ));
+    array_unshift($form['expose_button'], array(
+      'warning' => array(
+        '#type' => 'markup',
+        '#markup' => '<div class="messages warning">' . t('This filter is always exposed to users.') . '</div>',
+      )));
+    // Remove option to unexpose filter. Tried to disable, but double clicking would still work?
+    $form['expose_button']['checkbox']['checkbox']['#type'] = 'hidden';
     // Change "All Values" to "Available at runtime".
     $form['value']['#options']['all'] = t('Actual values will be available at run-time');
+    // Do not allow to check "all values".
+    $form['value']['#attributes']['disabled'] = 'disabled';
     // Cannot group without values.
     unset($form['group_button']);
   }
@@ -60,8 +74,20 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
    * Override expose_form.
    */
   public function expose_form(&$form, &$form_state) {
-      parent::expose_form($form, $form_state);
-      unset($form['expose']['reduce']);
+    parent::expose_form($form, $form_state);
+    // Remove reduce resultset interface.
+    unset($form['expose']['reduce']);
+    // TODO: These defaults are populated somewhere through AJAX, I could not find it....
+    // Provide default value for filter name.
+    if (empty($form['expose']['identifier']['#default_value'])) {
+      $form['expose']['identifier']['#default_value'] = $this->options['field'];
+    }
+    if (empty($form['expose']['label']['#default_value'])) {
+      $form['expose']['label']['#default_value'] = $this->definition['title'];
+    }
+    if (empty($form['ui_name']['#default_value'])) {
+        $form['ui_name']['#default_value'] = $this->definition['title'];
+    }
   }
 
   /**
@@ -76,10 +102,10 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
   /**
    * Get list of options for current view, only at runtime.
    */
-  protected function get_oids($field_name, $real_field, $field, $table, $table_alias) {
+  protected function get_oids($field_name, $real_field, $field, $table, $table_alias, $exposed_identifier, $ui_name) {
     $exposed_input = isset($this->view->exposed_input) ? $this->view->exposed_input : array();
     $exposed_input = array_merge(array(), $exposed_input);
-    unset($exposed_input[$field_name . '_selective']);
+    unset($exposed_input[$exposed_identifier]);
     $signature = md5(serialize(array(
       'name' => $this->view->name,
       'args' => $this->view->args,
@@ -91,7 +117,9 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
 
       // Clone the view and get all results.
       $view_copy = views_get_view($this->view->name);
-      if (!$view_copy) return NULL;
+      if (!$view_copy){
+        return NULL;
+      }
       $view_copy->selective_oids = TRUE;
       $view_copy->set_exposed_input($exposed_input);
       $view_copy->set_arguments($this->view->args);
@@ -105,9 +133,9 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
         $items_per_page = $_GET['items_per_page'];
         unset($_GET['items_per_page']);
       }
-      if (isset($_GET[$field])) {
-        $exposed_filter = $_GET[$field];
-        unset($_GET[$field]);
+      if (isset($_GET[$exposed_identifier])) {
+        $exposed_filter = $_GET[$exposed_identifier];
+        unset($_GET[$exposed_identifier]);
       }
       if (isset($_GET['page'])) {
         $exposed_page = $_GET['page'];
@@ -124,24 +152,42 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       $display_default = $view_copy->display['default'];
 
       // Remove all fields, except for the one for "distinct" to happen in.
-      $display->display_options['fields'] = array_intersect_key($display->display_options['fields'], array($field_name => NULL));
-      $display_default->display_options['fields'] = array_intersect_key($display->display_options['fields'], array($field_name => NULL));
+      foreach ($display->display_options['fields'] as $key => $value) {
+        if (($value['ui_name'] != $ui_name) || ($value['field'] != $field_name)) {
+          unset($display->display_options['fields'][$key]);
+        }
+      }
+      foreach ($display_default->display_options['fields'] as $key => $value) {
+        if (($value['ui_name'] != $ui_name) || ($value['field'] != $field_name)) {
+          unset($display_default->display_options['fields'][$key]);
+        }
+      }
 
       // Check to see if the user remembered to add correspondiend field to fields.
       if (empty($display->display_options['fields']) && empty($display_default->display_options['fields'])) {
-        drupal_set_message('Selective query filter {$field} must have corresponding field added to view.');
+        drupal_set_message(t('Selective query filter "@field" must have corresponding field added to view with Administrative Name set to "@name" and type "@type"', array('@field' => $field_name, '@name' => $exposed_identifier, '@type' => $field_name)), 'error');
         return array();
+      }
+
+      // Get ID of field that will be used for rendering.
+      foreach ($display->display_options['fields'] as $key => $value) {
+        $field_id = $value['id'];
+      }
+      if (!isset($field_id)) {
+        foreach ($display_default->display_options['fields'] as $key => $value) {
+          $field_id = $value['id'];
+        }
       }
 
       // If main field is excluded form presentation, bring it back.
       // Set group type for handler to populate database relationships in query.
-      if (isset($display->display_options['fields'][$field_name])) {
-        $display->display_options['fields'][$field_name]['exclude'] = 0;
-        $display->display_options['fields'][$field_name]['group_type'] = 'group';
+      if (isset($display->display_options['fields'][$field_id])) {
+        $display->display_options['fields'][$field_id]['exclude'] = 0;
+        $display->display_options['fields'][$field_id]['group_type'] = 'group';
       }
-      if (isset($display_default->display_options['fields'][$field_name])) {
-        $display_default->display_options['fields'][$field_name]['exclude'] = 0;
-        $display_default->display_options['fields'][$field_name]['group_type'] = 'group';
+      if (isset($display_default->display_options['fields'][$field_id])) {
+        $display_default->display_options['fields'][$field_id]['exclude'] = 0;
+        $display_default->display_options['fields'][$field_id]['group_type'] = 'group';
       }
 
       // Remove all sorting.
@@ -163,7 +209,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
         $_GET['items_per_page'] = $items_per_page;
       }
       if (isset($exposed_filter)) {
-        $_GET[$field] = $exposed_filter;
+        $_GET[$exposed_identifier] = $exposed_filter;
       }
       if (isset($exposed_page)) {
         $_GET['page'] = $exposed_page;
@@ -174,14 +220,17 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       $field_alias = $view_copy->query->field_aliases[$table][$real_field];
       foreach ($view_copy->result as $index => $row) {
         $key = $row->{$field_alias};
-        $value = $view_copy->render_field($field_name, $index);
-        $oids[$key] = empty($value) ? (empty($key) ? t('empty') : $key): $value; 
+        $value = $view_copy->render_field($field_id, $index);
+        $oids[$key] = empty($value) ? (empty($key) ? t('Empty (@key)', array('@key' => json_encode($key))) : $key): $value;
       }
+
+      // Sort values alphabetically.
+      asort($oids);
 
       // If limit exceeded this field is not good for being "selective".
       if (count($oids) == $max_items) {
         drupal_set_message(t('Selective filter [@field] has limited the amount of total results. Please, review you query configuration.', array('@field' => $field)));
-      } 
+      }
 
       self::$results[$signature] = $oids;
       $view_copy->destroy();
