@@ -114,7 +114,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       'real_field' => $real_field,
       'field' => $field,
       'table' => $table,
-      'ui_name' => $ui_name
+      'ui_name' => $ui_name,
     )));
     if (empty(self::$results[$signature])) {
       $max_items = 100;
@@ -167,10 +167,10 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
 
       // Check to see if the user remembered to add correspondiend field to fields.
       if (empty($display->display_options['fields']) && empty($display_default->display_options['fields'])) {
-        drupal_set_message(t('Selective query filter must have corresponding field added to view with Administrative Name set to "@name" and Base Type "@type"', 
+        drupal_set_message(t('Selective query filter must have corresponding field added to view with Administrative Name set to "@name" and Base Type "@type"',
           array(
-            '@name' => $ui_name, 
-            '@type' => $base_field)), 
+            '@name' => $ui_name,
+            '@type' => $base_field)),
             'error');
         return array();
       }
@@ -179,7 +179,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       foreach ($display->display_options['fields'] as $key => $value) {
         $display_field = &$value;
       }
-      if (!isset($field_id)) {
+      if (!isset($display_field)) {
         foreach ($display_default->display_options['fields'] as $key => &$value) {
           $display_field = &$value;
         }
@@ -189,10 +189,10 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
 
       // Check that relationships are coherent between Field and Filter.
       if ($display_field['relationship'] != $this->options['relationship']) {
-        drupal_set_message(t('Selective filter "@name": relationship of field and filter must match.', 
+        drupal_set_message(t('Selective filter "@name": relationship of field and filter must match.',
          array(
-           '@name' => $ui_name, 
-           '@type' => $base_field)), 
+           '@name' => $ui_name,
+           '@type' => $base_field)),
            'error');
         return array();
       }
