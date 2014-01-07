@@ -10,12 +10,12 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
   /**
    * Override set_default_options.
    */
-  public function set_default_options(){
-      parent::set_default_options();
-      // This filter showld always be exposed!
-      $this->options['exposed'] = TRUE;
-      // Do not allow to reduce options, makes no sense.
-      $this->options['expose']['reduce'] = FALSE;
+  public function set_default_options() {
+    parent::set_default_options();
+    // This filter showld always be exposed!
+    $this->options['exposed'] = TRUE;
+    // Do not allow to reduce options, makes no sense.
+    $this->options['expose']['reduce'] = FALSE;
   }
 
   /**
@@ -26,18 +26,18 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
     if (empty($this->view->selective_oids) && !empty($this->view->inited)) {
       $oids = $this->get_oids($this->definition['field_base'], $this->real_field, $this->field, $this->table, $this->table_alias, $this->options['expose']['identifier'], $this->options['ui_name']);
       $this->value_options = $oids;
-      // TODO: We are omiting null values in result set because they are improperly handled.
+      // TODO: We are omitting null values in result set because they are improperly handled.
       // When constructing the query.
       $this->value_options = array_diff_key($this->value_options, array("" => NULL));
     }
   }
 
   /**
-   * Override validate;
+   * Override validate.
    */
   public function validate() {
-      $errors = parent::validate();
-      return $errors;
+    $errors = parent::validate();
+    return $errors;
   }
 
   /**
@@ -86,7 +86,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       $form['expose']['label']['#default_value'] = $this->definition['title'];
     }
     if (empty($form['ui_name']['#default_value'])) {
-        $form['ui_name']['#default_value'] = $this->definition['title'];
+      $form['ui_name']['#default_value'] = $this->definition['title'];
     }
   }
 
@@ -117,7 +117,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
 
       // Clone the view and get all results.
       $view_copy = views_get_view($this->view->name);
-      if (!$view_copy){
+      if (!$view_copy) {
         return NULL;
       }
       $view_copy->selective_oids = TRUE;
@@ -165,7 +165,12 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
 
       // Check to see if the user remembered to add correspondiend field to fields.
       if (empty($display->display_options['fields']) && empty($display_default->display_options['fields'])) {
-        drupal_set_message(t('Selective query filter "@field" must have corresponding field added to view with Administrative Name set to "@name" and type "@type"', array('@field' => $field_name, '@name' => $exposed_identifier, '@type' => $field_name)), 'error');
+        drupal_set_message(t('Selective query filter "@field" must have corresponding field added to view with Administrative Name set to "@name" and type "@type"', 
+          array(
+            '@field' => $field_name, 
+            '@name' => $exposed_identifier, 
+            '@type' => $field_name)), 
+            'error');
         return array();
       }
 

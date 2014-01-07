@@ -19,4 +19,4 @@ obviously this field is not the kind of field you would use for a selective filt
 
 KNOWN ISSUES: When one of the available options in the result set is NULL, this will interpret the value as an
 empty string when constructing the query, so it will not work as expected. To overcome the issue, NULL values are
-excluded from available options! 
+excluded from available options!
