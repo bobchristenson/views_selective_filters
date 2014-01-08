@@ -25,14 +25,12 @@ function views_filters_selective_views_data_alter(&$data) {
   foreach ($data as $table_name => $table_info) {
     foreach ($table_info as $field_name => $field_info) {
       if (!empty($field_info['filter']['handler']) && $field_info['filter']['handler'] != 'views_handler_filter_selective') {
-        $_field_name = isset($field_info['filter']['field_name']) ? $field_info['filter']['field_name'] : NULL;
-        if (empty($_field_name)) {
-            continue;
-        }
         // Ignore translated, format and delta.
         if (_views_filters_selective_endsWith($field_name, '_i18n') || _views_filters_selective_endsWith($field_name, '_format') || $field_name == 'delta') {
           continue;
         }
+        // Compute underlying field name ($real_Field).
+        $_field_name = isset($field_info['filter']['field_name']) ? $field_info['filter']['field_name'] : NULL;
         $_field_real_field = isset($field_info['filter']['real field']) ? $field_info['filter']['real field'] : NULL;
         $real_field = empty($_field_name) ? (empty($_field_real_field) && !empty($field_info['field']) ? $field_name : $_field_real_field) : $_field_name;
         if (empty($real_field)) {
