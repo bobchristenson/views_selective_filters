@@ -62,6 +62,8 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       )));
     // Remove option to unexpose filter. Tried to disable, but did not work.
     $form['expose_button']['checkbox']['checkbox']['#type'] = 'hidden';
+    unset($form['expose_button']['button']);
+    unset($form['expose_button']['markup']);
     // Change "All Values" to "Available at runtime".
     $form['value']['#options']['all'] = t('Actual values will be available at run-time');
     // Do not allow to check "all values".
