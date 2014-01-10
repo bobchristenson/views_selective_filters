@@ -153,6 +153,10 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       $display = $view_copy->display[$this->view->current_display];
       $display_default = $view_copy->display['default'];
 
+      // Remove any exposed form configuration. This showed up with BEF module!
+      unset($display->display_options['exposed_form']);
+      unset($display_default->display_options['exposed_form']);
+
       // Remove all fields, except for the one for "distinct" to happen in.
       foreach ($display->display_options['fields'] as $key => $value) {
         if (($value['ui_name'] != $ui_name) || ($value['field'] != $base_field)) {
