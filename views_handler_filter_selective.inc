@@ -26,7 +26,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
     if (empty($this->view->selective_oids) && !empty($this->view->inited)) {
       $oids = $this->get_oids($this->definition['field_base'], $this->real_field, $this->field, $this->table, $this->table_alias, $this->options['expose']['identifier'], $this->options['ui_name']);
       $this->value_options = $oids;
-      // TODO: We are omitting null values in result set because they are improperly handled.
+      // TODO: Omit null values in result: they are improperly handled.
       // When constructing the query.
       $this->value_options = array_diff_key($this->value_options, array("" => NULL));
     }
@@ -60,7 +60,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
         '#type' => 'markup',
         '#markup' => '<div class="messages warning">' . t('This filter is always exposed to users.') . '</div>',
       )));
-    // Remove option to unexpose filter. Tried to disable, but double clicking would still work?
+    // Remove option to unexpose filter. Tried to disable, but did not work.
     $form['expose_button']['checkbox']['checkbox']['#type'] = 'hidden';
     // Change "All Values" to "Available at runtime".
     $form['value']['#options']['all'] = t('Actual values will be available at run-time');
@@ -77,7 +77,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
     parent::expose_form($form, $form_state);
     // Remove reduce resultset interface.
     unset($form['expose']['reduce']);
-    // TODO: These defaults are populated somewhere through AJAX, I could not find it....
+    // TODO: Populated somewhere through AJAX, I could not find it....
     // Provide default value for filter name.
     if (empty($form['expose']['identifier']['#default_value'])) {
       $form['expose']['identifier']['#default_value'] = $this->options['field'];
@@ -160,7 +160,8 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       // If we are using fields from default or current display.
       if (isset($display->display_options['fields'])) {
         $display_options_fields = &$display->display_options['fields'];
-      }else{
+      }
+      else {
         $display_options_fields = &$display_default->display_options['fields'];
       }
 
@@ -171,7 +172,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
         }
       }
 
-      // Check to see if the user remembered to add correspondiend field to fields.
+      // Check to see if the user remembered to add the field.
       if (empty($display_options_fields)) {
         drupal_set_message(t('Selective query filter must have corresponding field added to view with Administrative Name set to "@name" and Base Type "@type"',
           array(
