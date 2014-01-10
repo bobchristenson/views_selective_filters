@@ -119,7 +119,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
     if (empty(self::$results[$signature])) {
       $max_items = 100;
 
-      // Clone the view (current, so it works while editting) and get all results.
+      // Clone the view (so it works while editting) and get all results.
       $view_copy = $this->view->clone_view();
       if (!$view_copy) {
         return NULL;
@@ -128,8 +128,8 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       $view_copy->set_exposed_input($exposed_input);
       $view_copy->set_arguments($this->view->args);
 
-      // Easy to mess up with the field used for distinct and easily have thousands of elements.
-      // Limit result set to 100 items: anything above 100 is not user friendly at all.
+      // Mess up with the field used for distinct have thousands of elements.
+      // Limit result set to 100: anything above is not user friendly at all.
       $view_copy->set_items_per_page($max_items);
 
       // Remove paging, items per page and page number from context.
@@ -169,7 +169,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
         }
       }
 
-      // Check to see if the user remembered to add correspondiend field to fields.
+      // Check to see if the user remembered to add the field.
       if (empty($display->display_options['fields']) && empty($display_default->display_options['fields'])) {
         drupal_set_message(t('Selective query filter must have corresponding field added to view with Administrative Name set to "@name" and Base Type "@type"',
           array(
@@ -178,7 +178,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
             'error');
         return array();
       }
-        
+
       // Get ID of field that will be used for rendering.
       foreach ($display->display_options['fields'] as $key => $value) {
         $display_field = &$value;

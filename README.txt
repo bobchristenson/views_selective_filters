@@ -9,7 +9,8 @@ To make it work:
 [3] Add a field to the view that uses the same base field as the filter.
 [3.1] Give this field the SAME ADMINISTRATIVE NAME AS THE FILTER.
 [3.2] Configure the field output in [3] as you wish.
-[3.3] If you do not want this field to be shown in the result set, just mark it as "Hide From Display".
+[3.3] If you do not want this field to be shown in the result set,
+just mark it as "Hide From Display".
 
 You can get 3 types of errors with this module:
 
