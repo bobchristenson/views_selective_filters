@@ -157,20 +157,22 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       unset($display->display_options['exposed_form']);
       unset($display_default->display_options['exposed_form']);
 
-      // Remove all fields, except for the one for "distinct" to happen in.
-      foreach ($display->display_options['fields'] as $key => $value) {
-        if (($value['ui_name'] != $ui_name) || ($value['field'] != $base_field)) {
-          unset($display->display_options['fields'][$key]);
-        }
+      // If we are using fields from default or current display.
+      if (isset($display->display_options['fields'])) {
+        $display_options_fields = &$display->display_options['fields'];
+      }else{
+        $display_options_fields = &$display_default->display_options['fields'];
       }
-      foreach ($display_default->display_options['fields'] as $key => $value) {
+
+      // Remove all fields but the aggregate one.
+      foreach ($display_options_fields as $key => $value) {
         if (($value['ui_name'] != $ui_name) || ($value['field'] != $base_field)) {
-          unset($display_default->display_options['fields'][$key]);
+          unset($display_options_fields[$key]);
         }
       }
 
-      // Check to see if the user remembered to add the field.
-      if (empty($display->display_options['fields']) && empty($display_default->display_options['fields'])) {
+      // Check to see if the user remembered to add correspondiend field to fields.
+      if (empty($display_options_fields)) {
         drupal_set_message(t('Selective query filter must have corresponding field added to view with Administrative Name set to "@name" and Base Type "@type"',
           array(
             '@name' => $ui_name,
@@ -180,14 +182,8 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       }
 
       // Get ID of field that will be used for rendering.
-      foreach ($display->display_options['fields'] as $key => $value) {
-        $display_field = &$value;
-      }
-      if (!isset($display_field)) {
-        foreach ($display_default->display_options['fields'] as $key => &$value) {
-          $display_field = &$value;
-        }
-      }
+      $display_field = reset($display_options_fields);
+
       // Get field Id.
       $display_field_id = $display_field['id'];
 
@@ -200,6 +196,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
            'error');
         return array();
       }
+
       // If main field is excluded form presentation, bring it back.
       // Set group type for handler to populate database relationships in query.
       $display_field['exclude'] = 0;
