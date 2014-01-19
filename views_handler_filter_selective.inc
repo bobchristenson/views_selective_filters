@@ -169,7 +169,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
 
       // Remove all fields but the aggregate one.
       foreach ($display_options_fields as $key => $value) {
-        if (($value['ui_name'] != $ui_name) || ($value['field'] != $base_field)) {
+        if (((isset($value['ui_name']) && $value['ui_name']) != $ui_name) || ($value['field'] != $base_field)) {
           unset($display_options_fields[$key]);
         }
       }
