@@ -4,6 +4,9 @@
  * Views Filter Selective Handler Overrides.
  */
 
+/**
+ * {@inheritdoc}
+ */
 class views_handler_filter_selective extends views_handler_filter_in_operator {
   protected static $results;
 
