@@ -238,9 +238,15 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
 
       // Create array of objects for selector.
       $oids = array();
-      $field_alias = $display_field_handler->table_alias . '_' . $display_field_handler->real_field;
+      $field_alias = isset($display_field_handler->aliases[$display_field_handler->real_field]) ? $display_field_handler->aliases[$display_field_handler->real_field] : $display_field_handler->table_alias . '_' . $display_field_handler->real_field;
       foreach ($view_copy->result as $index => $row) {
-        $key = $row->{$field_alias};
+        // Using: $key = $display_field_handler->get_value($row); should be more robust.
+        // But returned values are sometimes nested arrays, and we need single string values.
+        // For the filters.
+        $key = $display_field_handler->get_value($row);
+        if (is_array($key)) {
+          $key = $row->{$field_alias};
+        }
         $value = $view_copy->render_field($display_field_id, $index);
         $oids[$key] = empty($value) ? (empty($key) ? t('Empty (@key)', array('@key' => json_encode($key))) : $key): $value;
       }
