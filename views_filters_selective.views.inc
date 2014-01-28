@@ -38,7 +38,7 @@ function views_filters_selective_views_data_alter(&$data) {
           continue;
         }
         $selective = $field_info;
-        $selective['title'] = (!empty($field_info['filter']['title']) ? $field_info['filter']['title'] : $field_info['title']) . ' (selective)';
+        $selective['title'] = (!empty($field_info['filter']['title']) ? $field_info['filter']['title'] : (!empty($field_info['title'])? $field_info['title'] : $real_field)) . ' (selective)';
         $selective['filter']['handler'] = 'views_handler_filter_selective';
         $selective['filter']['proxy'] = $field_info['filter']['handler'];
         $selective['filter']['field'] = $field_name;
