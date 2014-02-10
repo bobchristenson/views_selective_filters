@@ -248,7 +248,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
           $key = $row->{$field_alias};
         }
         $value = $view_copy->render_field($display_field_id, $index);
-        $oids[$key] = empty($value) ? (empty($key) ? t('Empty (@key)', array('@key' => json_encode($key))) : $key): $value;
+        $oids[$key] = empty($value) ? t('Empty (@key)', array('@key' => empty($key) ? json_encode($key) : $key)) : $value;
       }
 
       // Sort values alphabetically.
