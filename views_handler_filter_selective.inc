@@ -123,7 +123,6 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
     )));
     if (empty(self::$results[$signature])) {
       $max_items = 100;
-      $start_time = time();
 
       // Clone the view (so it works while editting) and get all results.
       $view_copy = $this->view->clone_view();
@@ -264,31 +263,6 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       // https://drupal.org/node/1055616. If people are smart
       // they will not enable caching on view with exposed
       // filter until bug fixed.
-
-      // Add info. to aditional queries for debugging.
-      // calling $this->view->start_query_capture() should suffice.
-      // but the feature seems to be broken, so I manually populate this.
-      // information. Still, it requieres to patch views:
-      // https://drupal.org/node/2191287.
-      $show_query = variable_get('views_ui_show_sql_query', FALSE);
-      if(isset($this->view->preview) && $this->view->preview == TRUE && $show_query) {
-        //$this->view->start_query_capture();
-        $query = $view_copy->build_info['query'];
-        $quoted = array();
-        if (get_class($view_copy->query) == 'views_plugin_query_default') {
-          $quoted = $query->getArguments();
-          $connection = Database::getConnection();
-          foreach ($quoted as $key => $val) {
-            if (is_array($val)) {
-              $quoted[$key] = implode(', ', array_map(array($connection, 'quote'), $val));
-            }
-            else {
-              $quoted[$key] = $connection->quote($val);
-            }
-          }
-        }
-        $this->view->additional_queries[] = array(check_plain(strtr($query, $quoted)), (time() - $start_time));
-      }
 
       self::$results[$signature] = $oids;
       $view_copy->destroy();
