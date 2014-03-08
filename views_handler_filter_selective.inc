@@ -219,10 +219,17 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       $display_default->display_options['group_by'] = 1;
       $display_default->handler->options['group_by'] = 1;
 
+      // Aggregate is incompatible with distinct and pure distinct.
+      unset($display_default->display_options['query']['options']['distinct']);
+      unset($display_default->display_options['query']['options']['pure_distinct']);
+
+      unset($display->display_options['query']['options']['distinct']);
+      unset($display->display_options['query']['options']['pure_distinct']);
+
       // Run View.
       $view_copy->execute($this->view->current_display);
 
-      // Reset conext parameters for real View.
+      // Reset context parameters for real View.
       if (isset($items_per_page)) {
         $_GET['items_per_page'] = $items_per_page;
       }
