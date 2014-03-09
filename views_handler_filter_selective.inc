@@ -194,13 +194,16 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       $display_field_id = $display_field['id'];
 
       // Check that relationships are coherent between Field and Filter.
-      if ($display_field['relationship'] != $this->options['relationship']) {
-        drupal_set_message(t('Selective filter "@name": relationship of field and filter must match.',
-         array(
-           '@name' => $ui_name,
-           '@type' => $base_field)),
-           'error');
-        return array();
+      // Only check if both are not empty.
+      if(!(empty($display_field['relationship']) && empty($this->options['relationship']))) {
+        if (empty($display_field['relationship']) || empty($this->options['relationship']) || ($display_field['relationship'] != $this->options['relationship'])) {
+          drupal_set_message(t('Selective filter "@name (@type)": relationship of field and filter must match.',
+           array(
+            '@name' => $ui_name,
+             '@type' => $base_field)),
+             'error');
+          return array();
+        }
       }
 
       // If main field is excluded form presentation, bring it back.
