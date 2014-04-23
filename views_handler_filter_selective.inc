@@ -32,6 +32,8 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       // TODO: Omit null values in result: they are improperly handled.
       // When constructing the query.
       $this->value_options = array_diff_key($this->value_options, array("" => NULL));
+    } else {
+      unset($this->value_options);
     }
   }
 
@@ -47,7 +49,10 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
    * Override value_form.
    */
   public function value_form(&$form, &$form_state) {
-    parent::value_form($form, $form_state);
+    $this->get_value_options();
+    if (!empty($this->value_options)) {
+      parent::value_form($form, $form_state);
+    }
     // Avoid the 'illegal values' Form API error.
     $form['value']['#validated'] = TRUE;
   }
@@ -172,7 +177,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
 
       // Remove all fields but the aggregate one.
       foreach ($display_options_fields as $key => $value) {
-        if (((isset($value['ui_name']) && $value['ui_name']) != $ui_name) || ($value['field'] != $base_field)) {
+        if ((isset($value['ui_name']) && ($value['ui_name'] != $ui_name)) || ($value['field'] != $base_field)) {
           unset($display_options_fields[$key]);
         }
       }
