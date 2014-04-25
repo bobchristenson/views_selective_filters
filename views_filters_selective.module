@@ -14,26 +14,6 @@ function views_filters_selective_views_api() {
 }
 
 /**
- * Implements hook_views_filters_selective_handler().
- */
-function views_filters_selective_views_filters_selective_handler() {
-  return array(
-    'views_handler_filter' => 'views_filters_selective_handler_filter',
-  );
-}
-
-/**
- * Callback implementation for generic filter.
- */
-function views_filters_selective_handler_filter($filter, $oids) {
-  $options = array();
-  foreach ($oids as $id) {
-    $options[] = $id;
-  }
-  return $options;
-}
-
-/**
  * Implements hook_init().
  */
 function views_filters_selective_init() {
