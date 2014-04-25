@@ -201,8 +201,8 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       // Check that relationships are coherent between Field and Filter.
       $no_display_field_relationship = empty($display_field['relationship']) || $display_field['relationship'] === 'none';
       $no_filter_relationship = empty($this->options['relationship']) || $this->options['relationship'] === 'none';
-      $equal =
-        (($no_display_field_relationship === TRUE) && ($no_filter_relationship === TRUE)) ||
+      $equal
+        = (($no_display_field_relationship === TRUE) && ($no_filter_relationship === TRUE)) ||
         ($display_field['relationship'] === $this->options['relationship']);
 
       if (!$equal) {
@@ -258,8 +258,8 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       $oids = array();
       $field_alias = isset($display_field_handler->aliases[$display_field_handler->real_field]) ? $display_field_handler->aliases[$display_field_handler->real_field] : $display_field_handler->table_alias . '_' . $display_field_handler->real_field;
       foreach ($view_copy->result as $index => $row) {
-        // Using: $key = $display_field_handler->get_value($row); should be more robust.
-        // But returned values are sometimes nested arrays, and we need single string values.
+        // $key = $display_field_handler->get_value($row) should be more robust.
+        // But returned values are sometimes nested arrays, and we need single values.
         // For the filters.
         $key = $display_field_handler->get_value($row);
         if (is_array($key)) {
