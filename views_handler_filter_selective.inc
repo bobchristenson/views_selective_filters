@@ -38,9 +38,9 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       $this->value_options = array_diff_key($this->value_options, array("" => NULL));
       // Set a flag in the view so we know it is using selective filters.
       $this->view->using_selective = TRUE;
-    } 
+    }
     else {
-      if(!empty($this->view->selective_oids)) {
+      if (!empty($this->view->selective_oids)) {
         $this->value_options = array();
       }
       else {
@@ -136,12 +136,12 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
     $signature = md5(serialize(array(
       'name' => $this->view->name,
       'args' => $this->view->args,
-      'input' => $exposed_input,
-      'base_field' => $base_field,
+      'input' => $this->view->exposed_input,
+      'base_field' => $this->definition['field_base'],
       'real_field' => $this->real_field,
-      'field' => $field,
-      'table' => $table,
-      'ui_name' => $ui_name,
+      'field' => $this->field,
+      'table' => $this->table,
+      'ui_name' => $this->options['ui_name'],
     )));
     return $signature;
   }
@@ -150,15 +150,12 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
    * Get list of options for current view, only at runtime.
    */
   protected function get_oids() {
-    // Parameters that we will be using during the process
+    // Parameters that we will be using during the process.
     $base_field = $this->definition['field_base'];
-    $field = $this->field;
-    $table = $this->table;
-    $exposed_identifier = $this->options['expose']['identifier'];
     $ui_name = $this->options['ui_name'];
     $signature = $this->GetSignature();
 
-    // Prevent same filters from being recalculated
+    // Prevent same filters from being recalculated.
     if (empty(self::$results[$signature])) {
       // We don't want a badly configured selective filter
       // to return thousands of possible values.
@@ -290,7 +287,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       $field_alias = isset($display_field_handler->aliases[$display_field_handler->real_field]) ? $display_field_handler->aliases[$display_field_handler->real_field] : $display_field_handler->table_alias . '_' . $display_field_handler->real_field;
       foreach ($view_copy->result as $index => $row) {
         // $key = $display_field_handler->get_value($row) should be more robust.
-        // But returned values are sometimes nested arrays, and we need single values.
+        // But values are sometimes nested arrays, and we need single values.
         // For the filters.
         $key = $display_field_handler->get_value($row);
         if (is_array($key)) {
