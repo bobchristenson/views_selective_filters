@@ -5,7 +5,7 @@
  */
 
 /**
- * {@inheritdoc}
+ * Views filter handler for selective values.
  */
 class views_handler_filter_selective extends views_handler_filter_in_operator {
   protected static $results;
@@ -15,7 +15,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
    */
   public function set_default_options() {
     parent::set_default_options();
-    // This filter showld always be exposed!
+    // This filter should always be exposed!
     $this->options['exposed'] = TRUE;
     // Do not allow to reduce options, makes no sense.
     $this->options['expose']['reduce'] = FALSE;
@@ -26,23 +26,32 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
    */
   public function get_value_options() {
     $this->value_options = array();
+    // If $this->view->selective_oids means that the handler is
+    // being called inside the cloned view used to obtain
+    // the selective values and thus this is to prevent infinite
+    // recursive loop.
     if (empty($this->view->selective_oids) && !empty($this->view->inited)) {
-      $oids = $this->get_oids($this->definition['field_base'], $this->real_field, $this->field, $this->table, $this->table_alias, $this->options['expose']['identifier'], $this->options['ui_name']);
+      $oids = $this->get_oids();
       $this->value_options = $oids;
       // TODO: Omit null values in result: they are improperly handled.
       // When constructing the query.
       $this->value_options = array_diff_key($this->value_options, array("" => NULL));
-    } else {
-      unset($this->value_options);
+      // Set a flag in the view so we know it is using selective filters.
+      $this->view->using_selective = TRUE;
+    } 
+    else {
+      if(!empty($this->view->selective_oids)) {
+        $this->value_options = array();
+      }
+      else {
+        // This is a special case, if $this->value_options is not an array
+        // then parent::value_form() will throw an exception, so,
+        // in our custom override no form is generated when $this->value_options
+        // is not an array. We only want this to happen in the administrative
+        // interface.
+        unset($this->value_options);
+      }
     }
-  }
-
-  /**
-   * Override validate.
-   */
-  public function validate() {
-    $errors = parent::validate();
-    return $errors;
   }
 
   /**
@@ -50,11 +59,19 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
    */
   public function value_form(&$form, &$form_state) {
     $this->get_value_options();
-    if (!empty($this->value_options)) {
+    // If you call parent::value_form() and $this->value_options
+    // is not an array, an exception is thrown.
+    if (isset($this->value_options) && is_array($this->value_options)) {
       parent::value_form($form, $form_state);
     }
     // Avoid the 'illegal values' Form API error.
     $form['value']['#validated'] = TRUE;
+    // Add behaviour for ajax block refresh.
+    // Don't do this if the view is being executed
+    // to obtain selective values.
+    if (empty($this->view->selective_oids)) {
+      $form['#attached']['js'][] = drupal_get_path('module', 'views_filters_selective') . '/js/attachBehaviours.js';
+    }
   }
 
   /**
@@ -72,8 +89,6 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
     $form['expose_button']['checkbox']['checkbox']['#type'] = 'hidden';
     unset($form['expose_button']['button']);
     unset($form['expose_button']['markup']);
-    // Change "All Values" to "Available at runtime".
-    $form['value']['#options']['all'] = t('Actual values will be available at run-time');
     // Do not allow to check "all values".
     $form['value']['#attributes']['disabled'] = 'disabled';
     // Cannot group without values.
@@ -104,29 +119,49 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
    * Override query.
    */
   public function query() {
+    // If this view was constructed to obtain the selective values for this
+    // handler, the handler should not add any constraints itself.
+    if (isset($this->view->selective_handler_signature) && $this->GetSignature() == $this->view->selective_handler_signature) {
+      return;
+    }
     // Decode the values to restore special chars.
     $this->value = array_map('urldecode', $this->value);
     parent::query();
   }
 
   /**
-   * Get list of options for current view, only at runtime.
+   * Get a signature for current filter handler.
    */
-  protected function get_oids($base_field, $real_field, $field, $table, $table_alias, $exposed_identifier, $ui_name) {
-    $exposed_input = isset($this->view->exposed_input) ? $this->view->exposed_input : array();
-    $exposed_input = array_merge(array(), $exposed_input);
-    unset($exposed_input[$exposed_identifier]);
+  protected function GetSignature() {
     $signature = md5(serialize(array(
       'name' => $this->view->name,
       'args' => $this->view->args,
       'input' => $exposed_input,
       'base_field' => $base_field,
-      'real_field' => $real_field,
+      'real_field' => $this->real_field,
       'field' => $field,
       'table' => $table,
       'ui_name' => $ui_name,
     )));
+    return $signature;
+  }
+
+  /**
+   * Get list of options for current view, only at runtime.
+   */
+  protected function get_oids() {
+    // Parameters that we will be using during the process
+    $base_field = $this->definition['field_base'];
+    $field = $this->field;
+    $table = $this->table;
+    $exposed_identifier = $this->options['expose']['identifier'];
+    $ui_name = $this->options['ui_name'];
+    $signature = $this->GetSignature();
+
+    // Prevent same filters from being recalculated
     if (empty(self::$results[$signature])) {
+      // We don't want a badly configured selective filter
+      // to return thousands of possible values.
       $max_items = 100;
 
       // Clone the view (so it works while editting) and get all results.
@@ -134,30 +169,28 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       if (!$view_copy) {
         return NULL;
       }
+      // Store a flag so that we can know from other places
+      // that this view is being used to obtain selective data.
       $view_copy->selective_oids = TRUE;
-      $view_copy->set_exposed_input($exposed_input);
+      // Store information about what filter is this view being used for.
+      $view_copy->selective_handler_signature = $signature;
+      // Transfer contextual information to cloned view.
+      $view_copy->set_exposed_input($this->view->exposed_input);
       $view_copy->set_arguments($this->view->args);
 
       // Mess up with the field used for distinct have thousands of elements.
       // Limit result set to 100: anything above is not user friendly at all.
       $view_copy->set_items_per_page($max_items);
 
-      // Remove paging, items per page and page number from context.
+      // Remove paging, and page number from context.
       if (isset($_GET['items_per_page'])) {
         $items_per_page = $_GET['items_per_page'];
         unset($_GET['items_per_page']);
-      }
-      if (isset($_GET[$exposed_identifier])) {
-        $exposed_filter = $_GET[$exposed_identifier];
-        unset($_GET[$exposed_identifier]);
       }
       if (isset($_GET['page'])) {
         $exposed_page = $_GET['page'];
         unset($_GET['page']);
       }
-
-      // Remove "our" field from exposed input.
-      unset($view_copy->exposed_input[$field]);
 
       // Manipulate display + default: don't know if fields are overriden.
       $display = $view_copy->display[$this->view->current_display];
@@ -214,12 +247,12 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
         return array();
       }
 
-      // If main field is excluded form presentation, bring it back.
+      // If main field is excluded from presentation, bring it back.
       // Set group type for handler to populate database relationships in query.
       $display_field['exclude'] = 0;
       $display_field['group_type'] = 'group';
 
-      // Remove all sorting.
+      // Remove all sorting: sorts must be added to aggregate fields.
       unset($display->display_options['sorts']);
       unset($display_default->display_options['sorts']);
 
@@ -231,6 +264,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       $display_default->handler->options['group_by'] = 1;
 
       // Aggregate is incompatible with distinct and pure distinct.
+      // At least it does not make sense as it is implemented now.
       unset($display_default->display_options['query']['options']['distinct']);
       unset($display_default->display_options['query']['options']['pure_distinct']);
 
@@ -240,12 +274,9 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       // Run View.
       $view_copy->execute($this->view->current_display);
 
-      // Reset context parameters for real View.
+      // Restore context parameters for real View.
       if (isset($items_per_page)) {
         $_GET['items_per_page'] = $items_per_page;
-      }
-      if (isset($exposed_filter)) {
-        $_GET[$exposed_identifier] = $exposed_filter;
       }
       if (isset($exposed_page)) {
         $_GET['page'] = $exposed_page;
@@ -276,11 +307,6 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       if (count($oids) == $max_items) {
         drupal_set_message(t('Selective filter "@field" has limited the amount of total results. Please, review you query configuration.', array('@field' => $ui_name)), 'warning');
       }
-
-      // TODO: unset caching options, due to unfixed old bug:
-      // https://drupal.org/node/1055616. If people are smart
-      // they will not enable caching on view with exposed
-      // filter until bug fixed.
 
       self::$results[$signature] = $oids;
       $view_copy->destroy();
