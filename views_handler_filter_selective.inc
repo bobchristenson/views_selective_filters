@@ -75,9 +75,19 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
   }
 
   /**
+   * Tell if two base fields are compatible.
+   */
+  private function BaseFieldCompatible($base_field1, $base_field2) {
+    // Extended condition see https://www.drupal.org/node/2295707
+    return preg_match('/^' . $base_field1 . '/', $base_field2);
+  }
+  
+  /**
    * Override options_form.
    */
   public function options_form(&$form, &$form_state) {
+    $base_field = $this->definition['field_base'];
+    
     parent::options_form($form, $form_state);
     // Filter should always be exposed, show warning.
     array_unshift($form['expose_button'], array(
@@ -93,6 +103,45 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
     $form['value']['#attributes']['disabled'] = 'disabled';
     // Cannot group without values.
     unset($form['group_button']);
+    
+    // Preload handlers, sorts and filters.
+    // This gest cached all along.
+    $this->view->display_handler->get_handlers('field');
+    $this->view->display_handler->get_handlers('sort');
+    $this->view->display_handler->get_handlers('filter');
+    
+    // Add combo to pick display field for filter.
+    $options = array();
+    foreach ($this->view->display_handler->handlers['field'] as $key => $handler) {
+      if ($this->BaseFieldCompatible($base_field, $handler->field)) {
+        $options[$handler->options['id']] = $handler->definition['group'] . ': ' . $handler->definition['title'] . '(' . $handler->label() . ')';
+      }
+    }
+    
+    $form['selective_display_field'] = array(
+      '#title' => t('Display field'),
+      '#type' => 'select',
+      '#description' => t('Field to be used for the selective options.'),
+      '#options' => $options,
+      '#default_value' => $this->options['selective_display_field'],
+    );
+    
+    // Add combo to pick sort for display.
+    $options = array();
+    // Add option for custom sortings.
+    $options['ASC'] = t('Custom ascending (asort)');
+    $options['DESC'] = t('Custom descending (asort reverse)');
+    // TODO: Allow the use of view's sorts!
+    //foreach ($this->view->display_handler->handlers['sort'] as $key => $handler) {
+    //  $options[$handler->options['id']] = $handler->definition['group'] . ': ' . $handler->definition['title'];
+    //}
+    $form['selective_display_sort'] = array(
+      '#title' => t('Sort field'),
+      '#type' => 'select',
+      '#description' => t('Choose wich field to use for display'),
+      '#options' => $options,
+      '#default_value' => 'ASC',
+    );
   }
 
   /**
@@ -127,6 +176,22 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
     // Decode the values to restore special chars.
     $this->value = array_map('urldecode', $this->value);
     parent::query();
+  }
+  
+  /**
+   * Override option_definition
+   */
+  function option_definition() {
+    $options = parent::option_definition();
+
+    // Storage for field used to display values.
+    $options['selective_display_field']['default'] = '';
+    // Storage for sort used to sort display values.
+    $options['selective_display_sort']['default'] = '';
+    // Storage for aggregated fields
+    $options['selective_aggregated_fields']['default'] = '';
+
+    return $options;
   }
 
   /**
@@ -205,9 +270,21 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
         $display_options_fields = &$display_default->display_options['fields'];
       }
 
-      // Remove all fields but the aggregate one.
+      // Original implementation based field matching on ui_name matches
+      // so we need to preserve backwards compatibility.
+      $field_to_keep = $this->options['selective_display_field'];
+      if (empty($field_to_keep)) {
+        foreach ($display_options_fields as $key => $value) {
+          if ((isset($value['ui_name']) && ($value['ui_name'] != $ui_name))) {
+            $field_to_keep = $key;
+            break;
+          }
+        }
+      }
+      
+      // Remove all fields but the one used to display and aggregate.
       foreach ($display_options_fields as $key => $value) {
-        if ((isset($value['ui_name']) && ($value['ui_name'] != $ui_name)) || ($value['field'] != $base_field)) {
+        if ($key != $field_to_keep) {
           unset($display_options_fields[$key]);
         }
       }
@@ -298,7 +375,14 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       }
 
       // Sort values alphabetically.
-      asort($oids);
+      $sort_option = $this->options['selective_display_sort'];
+      if (empty($sort_option) || $sort_option == 'ASC') {
+        asort($oids);
+      } 
+      else {
+        asort($oids);
+        $oids = array_reverse($oids);
+      }
 
       // If limit exceeded this field is not good for being "selective".
       if (count($oids) == $max_items) {
