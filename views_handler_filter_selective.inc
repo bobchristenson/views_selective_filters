@@ -275,7 +275,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       $field_to_keep = $this->options['selective_display_field'];
       if (empty($field_to_keep)) {
         foreach ($display_options_fields as $key => $value) {
-          if ((isset($value['ui_name']) && ($value['ui_name'] != $ui_name))) {
+          if ((isset($value['ui_name']) && ($value['ui_name'] == $ui_name))) {
             $field_to_keep = $key;
             break;
           }
