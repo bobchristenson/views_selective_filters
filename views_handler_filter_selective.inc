@@ -287,6 +287,11 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
         if ($key != $field_to_keep) {
           unset($display_options_fields[$key]);
         }
+        else {
+          // If there is a group column on the field, remove it so Field Collections will work.
+          // https://www.drupal.org/node/2333065
+          unset($display_options_fields[$key]['group_column']);
+        }
       }
 
       // Check to see if the user remembered to add the field.
