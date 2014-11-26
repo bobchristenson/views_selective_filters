@@ -364,6 +364,11 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       // Get Handler after execution.
       $display_field_handler = $view_copy->field[$display_field_id];
 
+      // We show human-readable values when case.
+      if (method_exists($display_field_handler, 'get_value_options')) {
+        $display_field_handler->get_value_options();
+      }
+
       // Create array of objects for selector.
       $oids = array();
       $field_alias = isset($display_field_handler->aliases[$display_field_handler->real_field]) ? $display_field_handler->aliases[$display_field_handler->real_field] : $display_field_handler->table_alias . '_' . $display_field_handler->real_field;
