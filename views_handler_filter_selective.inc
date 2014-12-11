@@ -390,8 +390,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
         asort($oids);
       } 
       else {
-        asort($oids);
-        $oids = array_reverse($oids);
+        arsort($oids);
       }
 
       // If limit exceeded this field is not good for being "selective".
