@@ -380,7 +380,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
         if (is_array($key)) {
           $key = $row->{$field_alias};
         }
-        $value = $view_copy->render_field($display_field_id, $index);
+        $value = strip_tags($view_copy->render_field($display_field_id, $index));
         $oids[$key] = empty($value) ? t('Empty (@key)', array('@key' => empty($key) ? json_encode($key) : $key)) : $value;
       }
 
