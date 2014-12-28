@@ -8,6 +8,14 @@
  * Views filter handler for selective values.
  */
 class views_handler_filter_selective extends views_handler_filter_in_operator {
+
+  /**
+   * The original filter value options, if it's an options list handler.
+   *
+   * @var array|false
+   */
+  protected $originalOptions;
+
   protected static $results;
 
   /**
@@ -129,6 +137,9 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
     // Add combo to pick sort for display.
     $options = array();
     // Add option for custom sortings.
+    if ($this->getOriginalOptions()) {
+      $options['ORIG'] = t('As the original filter');
+    }
     $options['ASC'] = t('Custom ascending (asort)');
     $options['DESC'] = t('Custom descending (asort reverse)');
     // TODO: Allow the use of view's sorts!
@@ -384,13 +395,16 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
         $oids[$key] = empty($value) ? t('Empty (@key)', array('@key' => empty($key) ? json_encode($key) : $key)) : $value;
       }
 
-      // Sort values alphabetically.
+      // Sort values.
       $sort_option = $this->options['selective_display_sort'];
       if (empty($sort_option) || $sort_option == 'ASC') {
         asort($oids);
-      } 
-      else {
+      }
+      elseif ($sort_option == 'DESC') {
         arsort($oids);
+      }
+      elseif ($sort_option == 'ORIG') {
+        $oids = static::filterOriginalOptions($this->getOriginalOptions(), array_keys($oids));
       }
 
       // If limit exceeded this field is not good for being "selective".
@@ -403,4 +417,61 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
     }
     return self::$results[$signature];
   }
+
+  /**
+   * Filters a list of original options according to selected set.
+   *
+   * @param array $options
+   *   The options list of the original filter.
+   * @param array $set
+   *   The narrowed set of results provided by the cloned view.
+   *
+   * @return array
+   *   The original filter options list narrowed to the cloned query results.
+   */
+  static protected function filterOriginalOptions($options, $set) {
+    $filtered = array();
+
+    foreach ($options as $key => $value) {
+      // Handle grouped options.
+      // @see hook_options_list().
+      if (is_array($value)) {
+        $nested = self::filterOriginalOptions($value, $set);
+        if (!empty($nested)) {
+          $filtered[$key] = $nested;
+        }
+        continue;
+      }
+      if (in_array($key, $set)) {
+        $filtered[$key] = $value;
+      }
+    }
+
+    return $filtered;
+  }
+
+  /**
+   * Returns the original filter value options, if provides an options list.
+   *
+   * @return array|false
+   *   The original filter option list, if available, or FALSE.
+   */
+  protected function getOriginalOptions() {
+    if (!isset($this->originalOptions)) {
+      $this->originalOptions = FALSE;
+      $class = $this->definition['proxy'];
+      $original_filter = new $class();
+      if (method_exists($original_filter, 'get_value_options')) {
+        $original_filter->set_definition($this->definition);
+        $options = $original_filter->get_value_options();
+        // We store only non-empty array.
+        if (is_array($options) && !empty($options)) {
+          $this->originalOptions = $options;
+        }
+      }
+    }
+
+    return $this->originalOptions;
+  }
+
 }
