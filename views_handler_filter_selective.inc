@@ -153,6 +153,14 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       '#options' => $options,
       '#default_value' => 'ASC',
     );
+    $form['selective_items_limit'] = array(
+      '#title' => t('Limit number of select items'),
+      '#type' => 'textfield',
+      '#description' => t("Don't allow a badly configured selective filter to return thousands of possible values. Enter a limit or remove any value for no limit. We recommend to set a limit no higher than 100."),
+      '#default_value' => $this->options['selective_items_limit'],
+      '#size' => 10,
+      '#element_validate' => array('element_validate_integer_positive'),
+    );
   }
 
   /**
@@ -201,6 +209,8 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
     $options['selective_display_sort']['default'] = '';
     // Storage for aggregated fields
     $options['selective_aggregated_fields']['default'] = '';
+    // Limit aggregated items to prevent a huge number of options in select.
+    $options['selective_items_limit']['default'] = 100;
 
     return $options;
   }
@@ -235,7 +245,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
     if (empty(self::$results[$signature])) {
       // We don't want a badly configured selective filter
       // to return thousands of possible values.
-      $max_items = 100;
+      $max_items = (int) $this->options['selective_items_limit'];
 
       // Clone the view (so it works while editting) and get all results.
       $view_copy = $this->view->clone_view();
@@ -408,7 +418,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       }
 
       // If limit exceeded this field is not good for being "selective".
-      if (count($oids) == $max_items) {
+      if (!empty($max_items) && count($oids) == $max_items) {
         drupal_set_message(t('Selective filter "@field" has limited the amount of total results. Please, review you query configuration.', array('@field' => $ui_name)), 'warning');
       }
 
