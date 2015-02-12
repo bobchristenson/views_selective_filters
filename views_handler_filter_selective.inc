@@ -478,6 +478,9 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
         if (is_array($options) && !empty($options)) {
           $this->originalOptions = $options;
         }
+        else {
+          $this->originalOptions = array();
+        }
       }
     }
 
