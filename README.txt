@@ -2,7 +2,6 @@ Allows to have an exposed filter only show options that belong to result set.
 
 To make it work:
 
-[0] Patch Views core if necessary, check INSTALL.txt.
 [1] Enable the module.
 [3] Add a field to the view that you want to use as a distinct field.
 [3.2] Configure the field output in [3] as you wish.
