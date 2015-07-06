@@ -371,6 +371,10 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       unset($display->display_options['query']['options']['distinct']);
       unset($display->display_options['query']['options']['pure_distinct']);
 
+      // Make sure we are not using a pager to prevent unnecessary count(*) queries.
+      $display->display_options['pager'] = unserialize('a:2:{s:4:"type";s:4:"none";s:7:"options";a:1:{s:6:"offset";s:1:"0";}}');
+      $display_default->display_options['pager'] = unserialize('a:2:{s:4:"type";s:4:"none";s:7:"options";a:1:{s:6:"offset";s:1:"0";}}');
+
       // Some style plugins can affect the built query, make sure
       // we use a reliable field based style plugin.
       $display->display_options['style_plugin'] = 'default';
