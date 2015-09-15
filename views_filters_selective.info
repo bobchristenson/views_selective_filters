@@ -1,6 +1,7 @@
 name = Views Selective Exposed Filters
 description = Restrict exposed filter values to those present in the result set.
 package = Views
+php = 5.4
 dependencies[] = views (>=7.x-3.11)
 dependencies[] = ctools
 core = 7.x
