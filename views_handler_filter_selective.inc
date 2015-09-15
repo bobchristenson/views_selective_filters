@@ -89,13 +89,13 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
     // Extended condition see https://www.drupal.org/node/2295707
     return preg_match('/^' . $base_field1 . '/', $base_field2);
   }
-  
+
   /**
    * Override options_form.
    */
   public function options_form(&$form, &$form_state) {
     $base_field = $this->definition['field_base'];
-    
+
     parent::options_form($form, $form_state);
     // Filter should always be exposed, show warning.
     array_unshift($form['expose_button'], array(
@@ -111,13 +111,13 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
     $form['value']['#attributes']['disabled'] = 'disabled';
     // Cannot group without values.
     unset($form['group_button']);
-    
+
     // Preload handlers, sorts and filters.
     // This gest cached all along.
     $this->view->display_handler->get_handlers('field');
     $this->view->display_handler->get_handlers('sort');
     $this->view->display_handler->get_handlers('filter');
-    
+
     // Add combo to pick display field for filter.
     $options = array();
     foreach ($this->view->display_handler->handlers['field'] as $key => $handler) {
@@ -125,7 +125,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
         $options[$handler->options['id']] = $handler->definition['group'] . ': ' . $handler->definition['title'] . '(' . $handler->label() . ')';
       }
     }
-    
+
     $form['selective_display_field'] = array(
       '#title' => t('Display field'),
       '#type' => 'select',
@@ -133,7 +133,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       '#options' => $options,
       '#default_value' => $this->options['selective_display_field'],
     );
-    
+
     // Add combo to pick sort for display.
     $options = array();
     // Add option for custom sortings.
@@ -193,10 +193,15 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       return;
     }
     // Decode the values to restore special chars.
-    $this->value = array_map('urldecode', $this->value);
+    if (is_array($this->value)) {
+      $this->value = array_map('urldecode', $this->value);
+    }
+    elseif (is_string($this->value)){
+      $this->value = urldecode($this->value);
+    }
     parent::query();
   }
-  
+
   /**
    * Override option_definition
    */
@@ -302,7 +307,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
           }
         }
       }
-      
+
       // Remove all fields but the one used to display and aggregate.
       foreach ($display_options_fields as $key => $value) {
         if ($key != $field_to_keep) {
