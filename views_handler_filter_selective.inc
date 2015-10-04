@@ -487,7 +487,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       $this->originalOptions = FALSE;
       $class = $this->definition['proxy'];
       $original_filter = new $class();
-      if (method_exists($original_filter, 'get_value_options')) {
+      if (is_callable(array($original_filter, 'get_value_options'))) {
         $original_filter->set_definition($this->definition);
         $options = $original_filter->get_value_options();
         // We store only non-empty array.
