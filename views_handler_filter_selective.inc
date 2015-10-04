@@ -140,6 +140,8 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
     if ($this->getOriginalOptions()) {
       $options['ORIG'] = t('As the original filter');
     }
+    $options['KASC'] = t('Custom key ascending (ksort)');
+    $options['KDESC'] = t('Custom key descending (ksort reverse)');
     $options['ASC'] = t('Custom ascending (asort)');
     $options['DESC'] = t('Custom descending (asort reverse)');
     // TODO: Allow the use of view's sorts!
@@ -428,6 +430,12 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       }
       elseif ($sort_option == 'DESC') {
         arsort($oids);
+      }
+      elseif ($sort_option == 'KASC') {
+        ksort($oids);
+      }
+      elseif ($sort_option == 'KDESC') {
+        krsort($oids);
       }
       elseif ($sort_option == 'ORIG') {
         $oids = static::filterOriginalOptions($this->getOriginalOptions(), array_keys($oids));
