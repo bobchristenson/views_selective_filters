@@ -136,6 +136,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
 
     // Add combo to pick sort for display.
     $options = array();
+    $options['NONE'] = t('No sorting');
     // Add option for custom sortings.
     if ($this->getOriginalOptions()) {
       $options['ORIG'] = t('As the original filter');
@@ -213,7 +214,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
     // Storage for field used to display values.
     $options['selective_display_field']['default'] = '';
     // Storage for sort used to sort display values.
-    $options['selective_display_sort']['default'] = '';
+    $options['selective_display_sort']['default'] = 'ASC';
     // Storage for aggregated fields
     $options['selective_aggregated_fields']['default'] = '';
     // Limit aggregated items to prevent a huge number of options in select.
@@ -425,20 +426,26 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
 
       // Sort values.
       $sort_option = $this->options['selective_display_sort'];
-      if (empty($sort_option) || $sort_option == 'ASC') {
-        asort($oids);
-      }
-      elseif ($sort_option == 'DESC') {
-        arsort($oids);
-      }
-      elseif ($sort_option == 'KASC') {
-        ksort($oids);
-      }
-      elseif ($sort_option == 'KDESC') {
-        krsort($oids);
-      }
-      elseif ($sort_option == 'ORIG') {
-        $oids = static::filterOriginalOptions($this->getOriginalOptions(), array_keys($oids));
+      switch($sort_option) {
+        case 'ASC':
+          asort($oids);
+          break;
+        case 'DESC':
+          arsort($oids);
+          break;
+        case 'KASC':
+          ksort($oids);
+          break;
+        case 'KDESC':
+          krsort($oids);
+          break;
+        case 'ORIG':
+          $oids = static::filterOriginalOptions($this->getOriginalOptions(), array_keys($oids));
+          break;
+        case 'NONE':
+          break;
+        default:
+          asort($oids);
       }
 
       // If limit exceeded this field is not good for being "selective".
