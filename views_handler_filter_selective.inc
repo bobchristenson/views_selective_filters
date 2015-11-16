@@ -440,7 +440,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
           krsort($oids);
           break;
         case 'ORIG':
-          $oids = static::filterOriginalOptions($this->getOriginalOptions(), array_keys($oids));
+          $oids = self::filterOriginalOptions($this->getOriginalOptions(), array_keys($oids));
           break;
         case 'NONE':
           break;
