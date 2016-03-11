@@ -154,7 +154,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       '#type' => 'select',
       '#description' => t('Choose wich field to use for display'),
       '#options' => $options,
-      '#default_value' => 'ASC',
+      '#default_value' => $this->options['selective_display_sort'],
     );
     $form['selective_items_limit'] = array(
       '#title' => t('Limit number of select items'),
