@@ -415,13 +415,15 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
 
       // Create array of objects for selector.
       $oids = array();
-      $field_alias = isset($display_field_handler->aliases[$display_field_handler->real_field]) ? $display_field_handler->aliases[$display_field_handler->real_field] : $display_field_handler->table_alias . '_' . $display_field_handler->real_field;
+      $field_alias_original = isset($display_field_handler->aliases[$display_field_handler->real_field]) ? $display_field_handler->aliases[$display_field_handler->real_field] : $display_field_handler->table_alias . '_' . $display_field_handler->real_field;
+      // views_plugin_query_default::add_field() truncates aliases to 60 characters.
+      $field_alias = substr($field_alias_original, 0, 60);
       foreach ($view_copy->result as $index => $row) {
-        // $key = $display_field_handler->get_value($row) should be more robust.
-        // But values are sometimes nested arrays, and we need single values.
-        // For the filters.
+        // $key = $display_field_handler->get_value($row) should be more robust
+        // but values are sometimes nested arrays, and we need scalar values
+        // for the filters.
         $key = $display_field_handler->get_value($row);
-        if (is_array($key)) {
+        if (!is_scalar($key)) {
           $key = $row->{$field_alias};
         }
         $value = strip_tags($view_copy->render_field($display_field_id, $index));
