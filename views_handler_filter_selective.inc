@@ -164,6 +164,13 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       '#size' => 10,
       '#element_validate' => array('element_validate_integer_positive'),
     );
+    $form['selective_options_ignore_exposed_data'] = array(
+      '#title' => t('Always show default set of options, even after exposed filters have been applied'),
+      '#type' => 'checkbox',
+      '#description' => t("If you don't want the filter options to continue to be filtered as additional exposed filters are applied, check this box"),
+      '#default_value' => $this->options['selective_options_ignore_exposed_data'],
+    );
+
   }
 
   /**
@@ -219,7 +226,8 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
     $options['selective_aggregated_fields']['default'] = '';
     // Limit aggregated items to prevent a huge number of options in select.
     $options['selective_items_limit']['default'] = 100;
-
+    // Toggle to not continue to filter options after exposed filters are applied
+    $options['selective_options_ignore_exposed_data']['default'] = 0;
     return $options;
   }
 
@@ -265,8 +273,23 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       $view_copy->selective_oids = TRUE;
       // Store information about what filter is this view being used for.
       $view_copy->selective_handler_signature = $signature;
+
+      // If this filter is configured to *not* continue to filter the options list as new exposed values are applied,
+      // make sure to explicitly set any exposed input values to null and remove contextual filters (args)
+      if (isset($this->options['selective_options_ignore_exposed_data']) && $this->options['selective_options_ignore_exposed_data'] === 1) {
+        if (!empty($this->view->exposed_input) && is_array($this->view->exposed_input)) {
+          $new_exposed_input = array();
+          foreach($this->view->exposed_input as $key => $val) {
+            $new_exposed_input[$key] = null;
+          }
+          $view_copy->set_exposed_input($new_exposed_input);
+        }
+      }
+      else {
+        $view_copy->set_exposed_input($this->view->exposed_input);  
+      }
+
       // Transfer contextual information to cloned view.
-      $view_copy->set_exposed_input($this->view->exposed_input);
       $view_copy->set_arguments($this->view->args);
 
       // Mess up with the field used for distinct have thousands of elements.
