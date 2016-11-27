@@ -476,6 +476,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
         default:
           asort($oids);
       }
+      drupal_alter('views_filters_selective_sort', $oids, $this);
 
       // If limit exceeded this field is not good for being "selective".
       if (!empty($max_items) && count($oids) == $max_items) {
