@@ -85,7 +85,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
   /**
    * Tell if two base fields are compatible.
    */
-  private function BaseFieldCompatible($base_field1, $base_field2) {
+  protected function BaseFieldCompatible($base_field1, $base_field2) {
     // Extended condition see https://www.drupal.org/node/2295707
     return preg_match('/^' . $base_field1 . '/', $base_field2);
   }
