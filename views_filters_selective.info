@@ -1,8 +1,5 @@
 name = Views Selective Exposed Filters
 description = Restrict exposed filter values to those present in the result set.
+backdrop = 1.x
+type = module
 package = Views
-dependencies[] = views (>=7.x-3.11)
-dependencies[] = ctools
-core = 7.x
-
-files[] = views_handler_filter_selective.inc

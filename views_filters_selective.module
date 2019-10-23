@@ -3,13 +3,23 @@
  * @file
  * Views Fiters Selective Module.
  */
+ 
+/**
+ * Implements hook_autoload_info().
+ */
+function views_filters_selective_autoload_info() {
+  return array(
+    'views_handler_filter_selective' => 'views/views_handler_filter_selective.inc',
+  );
+}
 
 /**
  * Implements hook_views_api().
  */
 function views_filters_selective_views_api() {
   return array(
-    'api' => 3.0,
+    'api' => '3.0',
+    'path' => backdrop_get_path('module', 'views_filters_selective') . '/views',
   );
 }
 
@@ -22,7 +32,7 @@ function views_filters_selective_views_ajax_data_alter(&$commands, $view) {
   if (!empty($view->using_selective)) {
     $exposed_block_plugin = $view->display_handler->get_plugin('exposed_form');
     // Generated as in views.module::views_exposed_form().
-    $block_id = drupal_clean_css_identifier('views_exposed_form-' . check_plain($view->name) . '-' . check_plain($view->display_handler->display->id));
+    $block_id = backdrop_clean_css_identifier('views_exposed_form-' . check_plain($view->name) . '-' . check_plain($view->display_handler->display->id));
     $commands[] = ajax_command_replace('#' . $block_id, $exposed_block_plugin->render_exposed_form(TRUE));
     // To make submit work after ajax (https://drupal.org/node/2182885).
     $commands[] = ajax_command_invoke(NULL, "attachBehaviors");

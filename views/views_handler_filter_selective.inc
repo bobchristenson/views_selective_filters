@@ -78,7 +78,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
     // Don't do this if the view is being executed
     // to obtain selective values.
     if (empty($this->view->selective_oids)) {
-      $form['#attached']['js'][] = drupal_get_path('module', 'views_filters_selective') . '/js/attachBehaviours.js';
+      $form['#attached']['js'][] = backdrop_get_path('module', 'views_filters_selective') . '/js/attachBehaviours.js';
     }
   }
 
@@ -352,7 +352,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
 
       // Check to see if the user remembered to add the field.
       if (empty($display_options_fields)) {
-        drupal_set_message(t('Selective query filter must have corresponding field added to view with Administrative Name set to "@name" and Base Type "@type"',
+        backdrop_set_message(t('Selective query filter must have corresponding field added to view with Administrative Name set to "@name" and Base Type "@type"',
           array(
             '@name' => $ui_name,
             '@type' => $base_field)),
@@ -374,7 +374,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
         ($display_field['relationship'] === $this->options['relationship']);
 
       if (!$equal) {
-        drupal_set_message(t('Selective filter "@name": relationship of field and filter must match.',
+        backdrop_set_message(t('Selective filter "@name": relationship of field and filter must match.',
           array(
             '@name' => $ui_name,
             '@type' => $base_field)),
@@ -476,11 +476,11 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
         default:
           asort($oids);
       }
-      drupal_alter('views_filters_selective_sort', $oids, $this);
+      backdrop_alter('views_filters_selective_sort', $oids, $this);
 
       // If limit exceeded this field is not good for being "selective".
       if (!empty($max_items) && count($oids) == $max_items) {
-        drupal_set_message(t('Selective filter "@field" has limited the amount of total results. Please, review you query configuration.', array('@field' => $ui_name)), 'warning');
+        backdrop_set_message(t('Selective filter "@field" has limited the amount of total results. Please, review you query configuration.', array('@field' => $ui_name)), 'warning');
       }
 
       self::$results[$signature] = $oids;
