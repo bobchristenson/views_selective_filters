@@ -152,17 +152,16 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
     $form['selective_display_sort'] = array(
       '#title' => t('Sort field'),
       '#type' => 'select',
-      '#description' => t('Choose wich field to use for display'),
+      '#description' => t('Choose which field to use for display'),
       '#options' => $options,
       '#default_value' => $this->options['selective_display_sort'],
     );
     $form['selective_items_limit'] = array(
       '#title' => t('Limit number of select items'),
-      '#type' => 'textfield',
+      '#type' => 'number',
       '#description' => t("Don't allow a badly configured selective filter to return thousands of possible values. Enter a limit or remove any value for no limit. We recommend to set a limit no higher than 100."),
       '#default_value' => $this->options['selective_items_limit'],
-      '#size' => 10,
-      '#element_validate' => array('element_validate_integer_positive'),
+      '#min' => 0,
     );
     $form['selective_options_ignore_exposed_data'] = array(
       '#title' => t('Always show default set of options, even after exposed filters have been applied'),
@@ -286,7 +285,7 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
         }
       }
       else {
-        $view_copy->set_exposed_input($this->view->exposed_input);  
+        $view_copy->set_exposed_input($this->view->exposed_input);
       }
 
       // Transfer contextual information to cloned view.
