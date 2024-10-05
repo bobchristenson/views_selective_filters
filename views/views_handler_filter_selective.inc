@@ -309,6 +309,10 @@ class views_handler_filter_selective extends views_handler_filter_in_operator {
       $display = $view_copy->display[$this->view->current_display];
       $display_default = $view_copy->display['default'];
 
+      // Initialize the current display handler.
+      $display->handler = views_get_plugin('display', $view_copy->display[$this->view->current_display]->display_plugin);
+      $display_default->handler = &$display->handler;
+
       // Remove any exposed form configuration. This showed up with BEF module!
       unset($display->display_options['exposed_form']);
       unset($display_default->display_options['exposed_form']);
