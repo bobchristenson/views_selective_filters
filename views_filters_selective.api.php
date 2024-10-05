@@ -13,7 +13,7 @@
  * @param object $handler
  *   An instance of the views_handler_filter_selective class.
  */
-function hook_views_filters_selective_sort_alter(&$oids, $handler) {
+function hook_views_filters_selective_sort_alter(array &$oids, $handler) {
   if ($handler->view->name == 'SOME_VIEW_NAME'
       && $handler->real_field == 'SOME_FIELD_NAME') {
     // Re-order $oids here.
